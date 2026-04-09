@@ -1,12 +1,14 @@
 from flask import Flask, jsonify
+from flask_cors import CORS  # Website ချိတ်ဆက်ဖို့အတွက်
 import requests
 from bs4 import BeautifulSoup
 
 app = Flask(__name__)
+CORS(app)  # CORS ခွင့်ပြုချက်ပေးခြင်း
 
 @app.route('/')
 def home():
-    return "Lucky Boss 556 API is running! Go to /api/history to see data."
+    return "Lucky Boss 556 - 2D History API is running! Use /api/history"
 
 @app.route('/api/history')
 def get_history():
@@ -19,7 +21,7 @@ def get_history():
         
         history_list = []
         
-        # သင့်ရဲ့ မူရင်း Logic ကို ဒီမှာ သုံးထားပါတယ်
+        # h4 တဂ် (ရက်စွဲ) တွေကို လိုက်ရှာမယ်
         for date_tag in soup.find_all('h4'):
             date = date_tag.get_text(strip=True)
             tile = date_tag.find_next_sibling('div', class_='tile')
@@ -27,31 +29,30 @@ def get_history():
             if tile:
                 rows = tile.find_all('div', class_='row')
                 
-                # ဒေတာရှိတဲ့ row တွေ ရှိမရှိ စစ်မယ်
+                # အနည်းဆုံး row ၄ ခု ရှိမရှိ စစ်မယ် (Header, 2D, Modern, Internet)
                 if len(rows) >= 4:
-                    twod_row = rows[1].find_all('div')
-                    modern_row = rows[2].find_all('div')
-                    internet_row = rows[3].find_all('div')
+                    twod_cols = rows[1].find_all('div')
+                    modern_cols = rows[2].find_all('div')
+                    internet_cols = rows[3].find_all('div')
 
-                    # ယူချင်တဲ့ ဒေတာတွေကို Dictionary ထဲ ထည့်မယ်
+                    # Column အရေအတွက် ပြည့်စုံမှ ဒေတာယူမယ် (Error ကာကွယ်ရန်)
                     day_data = {
                         "date": date,
                         "morning": {
-                            "twod": twod_row[1].get_text(strip=True),
-                            "three_digit": twod_row[2].get_text(strip=True),
-                            "modern": modern_row[1].get_text(strip=True),
-                            "internet": internet_row[1].get_text(strip=True)
+                            "twod": twod_cols[1].get_text(strip=True) if len(twod_cols) > 1 else "--",
+                            "three_digit": twod_cols[2].get_text(strip=True) if len(twod_cols) > 2 else "--",
+                            "modern": modern_cols[1].get_text(strip=True) if len(modern_cols) > 1 else "--",
+                            "internet": internet_cols[1].get_text(strip=True) if len(internet_cols) > 1 else "--"
                         },
                         "evening": {
-                            "twod": twod_row[3].get_text(strip=True),
-                            "three_digit": twod_row[4].get_text(strip=True),
-                            "modern": modern_row[3].get_text(strip=True),
-                            "internet": internet_row[3].get_text(strip=True)
+                            "twod": twod_cols[3].get_text(strip=True) if len(twod_cols) > 3 else "--",
+                            "three_digit": twod_cols[4].get_text(strip=True) if len(twod_cols) > 4 else "--",
+                            "modern": modern_cols[3].get_text(strip=True) if len(modern_cols) > 3 else "--",
+                            "internet": internet_cols[3].get_text(strip=True) if len(internet_cols) > 3 else "--"
                         }
                     }
                     history_list.append(day_data)
 
-        # နောက်ဆုံးမှာ JSON format နဲ့ return ပြန်ပေးရပါတယ်
         return jsonify({
             "success": True,
             "data": history_list
@@ -62,4 +63,4 @@ def get_history():
 
 if __name__ == "__main__":
     app.run()
-
+    
